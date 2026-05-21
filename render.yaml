@@ -26,7 +26,6 @@ services:
   - type: web
     name: invernaderos-frontend
     runtime: static
-    plan: free
     rootDir: frontend
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
     staticPublishPath: ./dist

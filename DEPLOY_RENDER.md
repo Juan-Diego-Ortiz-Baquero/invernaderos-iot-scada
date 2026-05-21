@@ -3,7 +3,7 @@
 Este proyecto se despliega como dos servicios:
 
 - `invernaderos-api`: backend ASP.NET Core con Docker.
-- `invernaderos-frontend`: frontend React/Vite como Static Site.
+- `invernaderos-frontend`: frontend React/Vite como Static Site. Render no requiere plan explicito para este servicio.
 
 ## 1. Subir a GitHub
 
