@@ -1,0 +1,6 @@
+@InvernaderosAPI_HostAddress = http://localhost:5159
+
+GET {{InvernaderosAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

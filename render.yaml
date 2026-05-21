@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: invernaderos-api
+    runtime: docker
+    plan: free
+    dockerContext: ./InvernaderosAPI/InvernaderosAPI
+    dockerfilePath: ./InvernaderosAPI/InvernaderosAPI/Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__Key
+        sync: false
+      - key: Jwt__Issuer
+        value: InvernaderosAPI
+      - key: Jwt__Audience
+        value: InvernaderosApp
+      - key: Jwt__ExpirationHours
+        value: "8"
+      - key: Alertas__CooldownMinutos
+        value: "10"
+      - key: Historiador__RangoMaximoDias
+        value: "1825"
+
+  - type: web
+    name: invernaderos-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+      - key: VITE_DEFAULT_GREENHOUSE_ID
+        value: "1"
+      - key: VITE_POLLING_INTERVAL_MS
+        value: "3000"
+      - key: VITE_DEVICE_STALE_AFTER_SECONDS
+        value: "10"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

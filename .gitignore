@@ -1,0 +1,23 @@
+# Dependencies
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+InvernaderosAPI/**/bin/
+InvernaderosAPI/**/obj/
+InvernaderosAPI/**/build-check/
+
+# Local logs
+*.log
+
+# Local IDE/user files
+*.user
+.vs/
+.vscode/
+
+# Local secrets/config. Configure these as Render environment variables.
+InvernaderosAPI/InvernaderosAPI/appsettings.json
+InvernaderosAPI/InvernaderosAPI/appsettings.Development.json
+
+# Temporary files
+.tmp/
