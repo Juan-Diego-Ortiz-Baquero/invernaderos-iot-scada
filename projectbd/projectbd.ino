@@ -10,8 +10,8 @@
 #include <DHT.h>
 
 // ── WiFi ──────────────────────────────────────────────────────
-const char* WIFI_SSID     = "U-SIGLOXXI";
-const char* WIFI_PASSWORD = "UdeCsigloXXI";
+const char* WIFI_SSID     = "Troyanos gratis";
+const char* WIFI_PASSWORD = "zwci5043";
 
 // ── API ───────────────────────────────────────────────────────
 const char* API_URL = "https://api-invernaderos-inicial.onrender.com/api/Lecturas";
