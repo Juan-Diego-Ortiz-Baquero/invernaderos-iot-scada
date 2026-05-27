@@ -11,9 +11,11 @@
 
 // ── WiFi ──────────────────────────────────────────────────────
 // ── WiFi ──────────────────────────────────────────────────────
-const char* WIFI_SSID     = "Redmi Note 13 5G";
-const char* WIFI_PASSWORD = "123456789*";
+//const char* WIFI_SSID     = "Redmi Note 13 5G";
+//const char* WIFI_PASSWORD = "123456789*";
 
+const char* WIFI_SSID     = "COMUNICACIONES CHIA";
+const char* WIFI_PASSWORD = "Adoracion";
 // ── API ───────────────────────────────────────────────────────
 const char* API_URL = "https://api-invernaderos-inicial.onrender.com/api/Lecturas";
 
