@@ -28,6 +28,7 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
   const [metricKey, setMetricKey] = useState('temperature');
   const [estado, setEstado] = useState('todos');
   const [resolution, setResolution] = useState('auto');
+  const [drilldownPage, setDrilldownPage] = useState(1);
   const [history, setHistory] = useState(null);
   const [readingsResult, setReadingsResult] = useState(null);
   const [alertResult, setAlertResult] = useState(null);
@@ -70,8 +71,8 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
         desde: timeQuery.desde,
         hasta: timeQuery.hasta,
         soloAlertas,
-        pagina: 1,
-        tamanoPagina: 100,
+        pagina: drilldownPage,
+        tamanoPagina: 25,
       }),
       getReadingsQuery(idInvernadero, {
         desde: timeQuery.desde,
@@ -97,7 +98,7 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
     return () => {
       isMounted = false;
     };
-  }, [appliedRange, estado, idInvernadero, resolution]);
+  }, [appliedRange, drilldownPage, estado, idInvernadero, resolution]);
 
   function applyTimeRange() {
     const result = validateTimeRange(timeRange);
@@ -108,6 +109,7 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
       return;
     }
 
+    setDrilldownPage(1);
     setAppliedRange(timeRange);
   }
 
@@ -115,7 +117,18 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
     const nextRange = getDefaultTimeRange();
     setTimeRange(nextRange);
     setAppliedRange(nextRange);
+    setDrilldownPage(1);
     setError('');
+  }
+
+  function handleEstadoChange(nextEstado) {
+    setDrilldownPage(1);
+    setEstado(nextEstado);
+  }
+
+  function handleResolutionChange(nextResolution) {
+    setDrilldownPage(1);
+    setResolution(nextResolution);
   }
 
   return (
@@ -160,7 +173,7 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
           </label>
           <label>
             Estado
-            <select value={estado} onChange={(event) => setEstado(event.target.value)}>
+            <select value={estado} onChange={(event) => handleEstadoChange(event.target.value)}>
               <option value="todos">Todos</option>
               <option value="normal">Normal</option>
               <option value="alertas">Alertas</option>
@@ -168,7 +181,7 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
           </label>
           <label>
             Resolucion
-            <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
+            <select value={resolution} onChange={(event) => handleResolutionChange(event.target.value)}>
               {ANALYTICS_RESOLUTIONS.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label}
@@ -215,8 +228,12 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
         />
         <AnalyticsDrilldownTable
           metric={metric}
+          currentPage={readingsResult?.pagina || drilldownPage}
+          onPageChange={setDrilldownPage}
+          pageSize={25}
           readings={readingsResult?.lecturas || []}
           total={readingsResult?.totalRegistros || 0}
+          totalPages={readingsResult?.totalPaginas || 1}
         />
       </section>
 
