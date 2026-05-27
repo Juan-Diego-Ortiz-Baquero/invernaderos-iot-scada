@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TimeRangeFilter } from './TimeRangeFilter.jsx';
 import { getHistory } from '../services/invernaderosApi.js';
-import { formatLocalDateTime, formatValue } from '../utils/formatters.js';
+import { formatDateTime, formatLocalDateTime, formatValue } from '../utils/formatters.js';
 import {
   chooseHistoryResolution,
   getDefaultTimeRange,
@@ -29,14 +29,25 @@ function buildPath(points) {
     .join(' ');
 }
 
-function formatPointDate(value, resolution) {
+function formatAxisPointDate(value, resolution) {
   if (!value) return 'Sin fecha';
   const options =
-    resolution === 'hora' || resolution === 'minuto'
-      ? { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }
-      : { day: '2-digit', month: '2-digit', year: '2-digit' };
+    resolution === 'minuto' || resolution === 'hora'
+      ? { hour: '2-digit' }
+      : resolution === 'dia' || resolution === 'semana'
+        ? { day: '2-digit', month: '2-digit' }
+        : { month: '2-digit', year: '2-digit' };
 
   return new Intl.DateTimeFormat('es-CO', { ...options, timeZone: 'America/Bogota' }).format(new Date(value));
+}
+
+function formatTooltipPointDate(value) {
+  return value ? formatDateTime(value) : 'Sin fecha';
+}
+
+function shouldShowAxisLabel(index, total) {
+  if (total <= 8) return true;
+  return index === 0 || index === total - 1 || index % Math.max(1, Math.ceil(total / 6)) === 0;
 }
 
 function getVisibleMetrics(selectedKeys) {
@@ -50,6 +61,7 @@ export function HistorianPanel({ idInvernadero }) {
   const [history, setHistory] = useState(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   const visibleMetrics = getVisibleMetrics(selectedMetricKeys);
   const appliedDates = validateTimeRange(appliedRange);
@@ -165,6 +177,17 @@ export function HistorianPanel({ idInvernadero }) {
       return { ...metric, coordinates, path: buildPath(coordinates) };
     });
 
+    const firstSeries = series[0];
+    const selectedPoint =
+      hoveredPoint ||
+      (firstSeries?.coordinates.length
+        ? {
+            ...firstSeries.coordinates[firstSeries.coordinates.length - 1],
+            metricLabel: firstSeries.label,
+            unit: firstSeries.unit,
+          }
+        : null);
+
     return {
       average: values.length ? values.reduce((total, value) => total + value, 0) / values.length : null,
       height,
@@ -172,13 +195,15 @@ export function HistorianPanel({ idInvernadero }) {
       min: values.length ? min : null,
       padding,
       points,
+      selectedPoint,
       series,
       width,
       yTicks: [domainMax, (domainMax + domainMin) / 2, domainMin],
     };
-  }, [history, visibleMetrics]);
+  }, [history, hoveredPoint, selectedMetricKeys, visibleMetrics]);
 
   const lastPoint = chart.points[chart.points.length - 1];
+  const activePoint = hoveredPoint || chart.selectedPoint || null;
 
   return (
     <section className="panel trend-panel historian-panel" aria-labelledby="historian-title">
@@ -245,11 +270,9 @@ export function HistorianPanel({ idInvernadero }) {
           <strong>
             {appliedDates.valid ? getRangeDurationLabel(appliedDates.start, appliedDates.end) : 'Sin rango'}
           </strong>
-          <small>
-            {lastPoint
-              ? `Ultimo punto: ${formatPointDate(lastPoint.fechaInicio, history?.resolucion)}`
-              : 'Esperando historial'}
-          </small>
+            <small>
+              {lastPoint ? `Ultimo punto: ${formatAxisPointDate(lastPoint.fechaInicio, history?.resolucion)}` : 'Esperando historial'}
+            </small>
         </div>
       </div>
 
@@ -279,15 +302,15 @@ export function HistorianPanel({ idInvernadero }) {
 
               <g className="chart-axis">
                 {chart.points.map((point, index) => {
-                  const isVisible = index === 0 || index === chart.points.length - 1 || index % 3 === 0;
                   const x =
                     chart.padding.left +
                     index *
                       ((chart.width - chart.padding.left - chart.padding.right) / Math.max(chart.points.length - 1, 1));
+                  const isVisible = shouldShowAxisLabel(index, chart.points.length);
 
                   return isVisible ? (
                     <text key={`${point.fechaInicio}-${index}`} x={x} y={chart.height - 12}>
-                      {formatPointDate(point.fechaInicio, history?.resolucion)}
+                      {formatAxisPointDate(point.fechaInicio, history?.resolucion)}
                     </text>
                   ) : null;
                 })}
@@ -301,12 +324,34 @@ export function HistorianPanel({ idInvernadero }) {
                       className="chart-point"
                       cx={point.x}
                       cy={point.y}
+                      aria-label={`${serie.label} ${formatValue(point.value, serie.unit)} en ${formatTooltipPointDate(point.date)}`}
+                      onBlur={() => setHoveredPoint(null)}
+                      onFocus={() => setHoveredPoint({ ...point, metricLabel: serie.label, unit: serie.unit })}
+                      onMouseEnter={() => setHoveredPoint({ ...point, metricLabel: serie.label, unit: serie.unit })}
+                      onMouseLeave={() => setHoveredPoint(null)}
+                      role="button"
+                      tabIndex="0"
                       key={`${serie.key}-${point.date}`}
                       r="3"
                     />
                   ))}
                 </g>
               ))}
+              {activePoint && activePoint.value !== null ? (
+                <g className="chart-cursor">
+                  <line
+                    x1={activePoint.x}
+                    x2={activePoint.x}
+                    y1={chart.padding.top}
+                    y2={chart.height - chart.padding.bottom}
+                  />
+                  <circle cx={activePoint.x} cy={activePoint.y} r="7" />
+                  <text x={Math.min(activePoint.x + 12, chart.width - 178)} y={Math.max(activePoint.y - 12, 20)}>
+                    {formatTooltipPointDate(activePoint.date)} · {activePoint.metricLabel} ·{' '}
+                    {formatValue(activePoint.value, activePoint.unit || '')}
+                  </text>
+                </g>
+              ) : null}
             </svg>
           </div>
 
