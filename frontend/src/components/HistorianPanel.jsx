@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { TimeRangeFilter } from './TimeRangeFilter.jsx';
 import { getHistory } from '../services/invernaderosApi.js';
 import { formatLocalDateTime, formatValue } from '../utils/formatters.js';
-
-const ranges = [
-  { key: '24h', label: '24 horas', amount: 24, unit: 'hours', resolution: 'hora' },
-  { key: '7d', label: '7 dias', amount: 7, unit: 'days', resolution: 'dia' },
-  { key: '15d', label: '15 dias', amount: 15, unit: 'days', resolution: 'dia' },
-  { key: '30d', label: '30 dias', amount: 30, unit: 'days', resolution: 'dia' },
-  { key: '12m', label: '12 meses', amount: 12, unit: 'months', resolution: 'mes' },
-  { key: '5y', label: '5 anos', amount: 5, unit: 'years', resolution: 'anio' },
-];
+import {
+  chooseHistoryResolution,
+  getDefaultTimeRange,
+  getRangeDurationLabel,
+  toTimeRangeQuery,
+  validateTimeRange,
+} from '../utils/timeRange.js';
 
 const metrics = [
   { key: 'temperature', label: 'Temperatura', field: 'temperaturaPromedio', unit: '°C', className: 'chart-line--temp' },
@@ -18,25 +17,6 @@ const metrics = [
   { key: 'light', label: 'Luminosidad', field: 'luminosidadPromedio', unit: ' lx', className: 'chart-line--light' },
   { key: 'air', label: 'Gas', field: 'calidadAirePromedio', unit: ' ppm', className: 'chart-line--air' },
 ];
-
-function addRange(date, range, direction = -1) {
-  const next = new Date(date);
-  const amount = range.amount * direction;
-
-  if (range.unit === 'hours') next.setHours(next.getHours() + amount);
-  if (range.unit === 'days') next.setDate(next.getDate() + amount);
-  if (range.unit === 'months') next.setMonth(next.getMonth() + amount);
-  if (range.unit === 'years') next.setFullYear(next.getFullYear() + amount);
-
-  return next;
-}
-
-function toApiDate(date) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(
-    date.getMinutes(),
-  )}:${pad(date.getSeconds())}`;
-}
 
 function toNumber(value) {
   const number = Number(value);
@@ -52,7 +32,7 @@ function buildPath(points) {
 function formatPointDate(value, resolution) {
   if (!value) return 'Sin fecha';
   const options =
-    resolution === 'hora'
+    resolution === 'hora' || resolution === 'minuto'
       ? { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }
       : { day: '2-digit', month: '2-digit', year: '2-digit' };
 
@@ -64,14 +44,16 @@ function getVisibleMetrics(selectedKeys) {
 }
 
 export function HistorianPanel({ idInvernadero }) {
-  const [selectedRangeKey, setSelectedRangeKey] = useState('24h');
+  const [timeRange, setTimeRange] = useState(() => getDefaultTimeRange());
+  const [appliedRange, setAppliedRange] = useState(() => getDefaultTimeRange());
   const [selectedMetricKeys, setSelectedMetricKeys] = useState(() => metrics.map((metric) => metric.key));
   const [history, setHistory] = useState(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
 
-  const selectedRange = ranges.find((range) => range.key === selectedRangeKey) || ranges[0];
   const visibleMetrics = getVisibleMetrics(selectedMetricKeys);
+  const appliedDates = validateTimeRange(appliedRange);
+  const currentResolution = appliedDates.valid ? chooseHistoryResolution(appliedDates.start, appliedDates.end) : 'hora';
 
   function toggleMetric(metricKey) {
     setSelectedMetricKeys((current) => {
@@ -87,16 +69,23 @@ export function HistorianPanel({ idInvernadero }) {
 
   useEffect(() => {
     let isMounted = true;
-    const hasta = new Date();
-    const desde = addRange(hasta, selectedRange);
+    const timeQuery = toTimeRangeQuery(appliedRange);
+
+    if (!timeQuery.valid) {
+      setError(timeQuery.error);
+      setStatus('error');
+      return undefined;
+    }
+
+    const resolucion = chooseHistoryResolution(timeQuery.start, timeQuery.end);
 
     setStatus('loading');
     setError('');
 
     getHistory(idInvernadero, {
-      desde: toApiDate(desde),
-      hasta: toApiDate(hasta),
-      resolucion: selectedRange.resolution,
+      desde: timeQuery.desde,
+      hasta: timeQuery.hasta,
+      resolucion,
     })
       .then((response) => {
         if (!isMounted) return;
@@ -112,7 +101,26 @@ export function HistorianPanel({ idInvernadero }) {
     return () => {
       isMounted = false;
     };
-  }, [idInvernadero, selectedRange]);
+  }, [idInvernadero, appliedRange]);
+
+  function applyTimeRange() {
+    const result = validateTimeRange(timeRange);
+
+    if (!result.valid) {
+      setError(result.error);
+      setStatus('error');
+      return;
+    }
+
+    setAppliedRange(timeRange);
+  }
+
+  function clearTimeRange() {
+    const nextRange = getDefaultTimeRange();
+    setTimeRange(nextRange);
+    setAppliedRange(nextRange);
+    setError('');
+  }
 
   const chart = useMemo(() => {
     const points = history?.puntos || [];
@@ -180,20 +188,6 @@ export function HistorianPanel({ idInvernadero }) {
           <h2 id="historian-title">Tendencias historicas</h2>
         </div>
         <div className="historian-controls" aria-label="Filtros de historiador">
-          <div className="chart-tabs" role="tablist" aria-label="Rango historico">
-            {ranges.map((range) => (
-              <button
-                aria-selected={range.key === selectedRange.key}
-                className="chart-tab"
-                key={range.key}
-                onClick={() => setSelectedRangeKey(range.key)}
-                role="tab"
-                type="button"
-              >
-                {range.label}
-              </button>
-            ))}
-          </div>
           <details className="multi-select multi-select--wide">
             <summary>
               {selectedMetricKeys.length === metrics.length
@@ -224,10 +218,21 @@ export function HistorianPanel({ idInvernadero }) {
         </div>
       </div>
 
+      <TimeRangeFilter
+        appliedRange={appliedRange}
+        busy={status === 'loading'}
+        error={error && status === 'error' ? error : ''}
+        idPrefix="historian"
+        onApply={applyTimeRange}
+        onChange={setTimeRange}
+        onClear={clearTimeRange}
+        range={timeRange}
+      />
+
       <div className="chart-insights" aria-label="Resumen del historiador">
         <div>
           <span>Resolucion</span>
-          <strong>{history?.resolucion || selectedRange.resolution}</strong>
+          <strong>{history?.resolucion || currentResolution}</strong>
           <small>{chart.points.length} puntos</small>
         </div>
         <div>
@@ -236,9 +241,15 @@ export function HistorianPanel({ idInvernadero }) {
           <small>{selectedMetricKeys.length === 1 ? visibleMetrics[0]?.label : 'Variables seleccionadas'}</small>
         </div>
         <div>
-          <span>Ultimo punto</span>
-          <strong>{lastPoint ? formatPointDate(lastPoint.fechaInicio, selectedRange.resolution) : 'Sin datos'}</strong>
-          <small>{lastPoint ? `${lastPoint.totalLecturas} lecturas` : 'Esperando historial'}</small>
+          <span>Periodo</span>
+          <strong>
+            {appliedDates.valid ? getRangeDurationLabel(appliedDates.start, appliedDates.end) : 'Sin rango'}
+          </strong>
+          <small>
+            {lastPoint
+              ? `Ultimo punto: ${formatPointDate(lastPoint.fechaInicio, history?.resolucion)}`
+              : 'Esperando historial'}
+          </small>
         </div>
       </div>
 
@@ -276,7 +287,7 @@ export function HistorianPanel({ idInvernadero }) {
 
                   return isVisible ? (
                     <text key={`${point.fechaInicio}-${index}`} x={x} y={chart.height - 12}>
-                      {formatPointDate(point.fechaInicio, selectedRange.resolution)}
+                      {formatPointDate(point.fechaInicio, history?.resolucion)}
                     </text>
                   ) : null;
                 })}

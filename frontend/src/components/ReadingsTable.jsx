@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { TimeRangeFilter } from './TimeRangeFilter.jsx';
 import { getReadingsQuery } from '../services/invernaderosApi.js';
 import { formatDateTime, formatValue } from '../utils/formatters.js';
-
-const rangeOptions = [
-  { key: 'live', label: 'Ultimas lecturas', days: null },
-  { key: 'today', label: 'Hoy', days: 0 },
-  { key: '7d', label: '7 dias', days: 7 },
-  { key: '15d', label: '15 dias', days: 15 },
-  { key: '30d', label: '30 dias', days: 30 },
-];
+import { getDefaultTimeRange, toTimeRangeQuery } from '../utils/timeRange.js';
 
 const signalOptions = [
   { key: 'temperature', label: 'Temperatura' },
@@ -18,52 +12,15 @@ const signalOptions = [
   { key: 'light', label: 'Luminosidad' },
 ];
 
-function toInputDate(date) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-function startOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-}
-
-function endOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-}
-
-function toApiDate(dateText, end = false) {
-  if (!dateText) return '';
-  const [year, month, day] = dateText.split('-').map(Number);
-  const date = end ? endOfDay(new Date(year, month - 1, day)) : startOfDay(new Date(year, month - 1, day));
-  const pad = (value) => String(value).padStart(2, '0');
-
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(
-    date.getMinutes(),
-  )}:${pad(date.getSeconds())}`;
-}
-
-function getPresetDates(rangeKey) {
-  const now = new Date();
-  const range = rangeOptions.find((option) => option.key === rangeKey);
-
-  if (!range || range.days === null) return { desde: '', hasta: '' };
-  if (range.days === 0) return { desde: toInputDate(now), hasta: toInputDate(now) };
-
-  const from = new Date(now);
-  from.setDate(from.getDate() - range.days);
-  return { desde: toInputDate(from), hasta: toInputDate(now) };
-}
-
 export function ReadingsTable({ idInvernadero, readings }) {
   const variablesMenuRef = useRef(null);
   const [filters, setFilters] = useState({
-    range: 'live',
-    desde: '',
-    hasta: '',
+    timeRange: getDefaultTimeRange(),
     signals: signalOptions.map((signal) => signal.key),
     estado: 'todos',
     tamanoPagina: 50,
   });
+  const [appliedRange, setAppliedRange] = useState(null);
   const [queryResult, setQueryResult] = useState(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
@@ -95,14 +52,7 @@ export function ReadingsTable({ idInvernadero, readings }) {
   }, []);
 
   function updateFilter(name, value) {
-    setFilters((current) => {
-      if (name === 'range') {
-        const dates = getPresetDates(value);
-        return { ...current, range: value, ...dates };
-      }
-
-      return { ...current, [name]: value };
-    });
+    setFilters((current) => ({ ...current, [name]: value }));
   }
 
   function toggleSignal(signalKey) {
@@ -119,19 +69,29 @@ export function ReadingsTable({ idInvernadero, readings }) {
     });
   }
 
-  async function loadPage(page = 1) {
+  async function loadPage(page = 1, rangeOverride = null) {
+    const rangeForQuery = rangeOverride || appliedRange || filters.timeRange;
+    const timeQuery = toTimeRangeQuery(rangeForQuery);
+
+    if (!timeQuery.valid) {
+      setError(timeQuery.error);
+      setStatus('error');
+      return;
+    }
+
     setStatus('loading');
     setError('');
 
     try {
       const response = await getReadingsQuery(idInvernadero, {
-        desde: toApiDate(filters.desde),
-        hasta: toApiDate(filters.hasta, true),
+        desde: timeQuery.desde,
+        hasta: timeQuery.hasta,
         soloAlertas: filters.estado === 'todos' ? '' : filters.estado === 'alertas',
         pagina: page,
         tamanoPagina: filters.tamanoPagina,
       });
 
+      setAppliedRange(rangeForQuery);
       setQueryResult(response);
       setStatus('ready');
     } catch (requestError) {
@@ -142,12 +102,11 @@ export function ReadingsTable({ idInvernadero, readings }) {
 
   function clearFilters() {
     setQueryResult(null);
+    setAppliedRange(null);
     setError('');
     setStatus('idle');
     setFilters({
-      range: 'live',
-      desde: '',
-      hasta: '',
+      timeRange: getDefaultTimeRange(),
       signals: signalOptions.map((signal) => signal.key),
       estado: 'todos',
       tamanoPagina: 50,
@@ -163,34 +122,18 @@ export function ReadingsTable({ idInvernadero, readings }) {
         </div>
       </div>
 
+      <TimeRangeFilter
+        appliedRange={appliedRange}
+        busy={status === 'loading'}
+        error={error && status === 'error' ? error : ''}
+        idPrefix="readings"
+        onApply={() => loadPage(1, filters.timeRange)}
+        onChange={(timeRange) => updateFilter('timeRange', timeRange)}
+        onClear={clearFilters}
+        range={filters.timeRange}
+      />
+
       <div className="telemetry-filters" aria-label="Filtros de telemetria">
-        <label>
-          Rango
-          <select value={filters.range} onChange={(event) => updateFilter('range', event.target.value)}>
-            {rangeOptions.map((range) => (
-              <option key={range.key} value={range.key}>
-                {range.label}
-              </option>
-            ))}
-            <option value="custom">Personalizado</option>
-          </select>
-        </label>
-        <label>
-          Desde
-          <input
-            type="date"
-            value={filters.desde}
-            onChange={(event) => updateFilter('desde', event.target.value)}
-          />
-        </label>
-        <label>
-          Hasta
-          <input
-            type="date"
-            value={filters.hasta}
-            onChange={(event) => updateFilter('hasta', event.target.value)}
-          />
-        </label>
         <div className="filter-field">
           <span>Variables</span>
           <details className="multi-select" ref={variablesMenuRef}>
@@ -251,7 +194,7 @@ export function ReadingsTable({ idInvernadero, readings }) {
         </div>
       </div>
 
-      {error ? <p className="empty-state">{error}</p> : null}
+      {error && status !== 'error' ? <p className="empty-state">{error}</p> : null}
 
       {activeReadings.length ? (
         <>
