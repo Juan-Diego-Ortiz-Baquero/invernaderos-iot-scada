@@ -26,10 +26,15 @@ async function request(path, options = {}) {
   }
 
   const contentType = response.headers.get('content-type') || '';
-  const payload = contentType.includes('application/json') ? await response.json() : null;
+  const rawBody = await response.text();
+  const payload = contentType.includes('application/json') && rawBody ? JSON.parse(rawBody) : null;
 
   if (!response.ok) {
-    const message = payload?.mensaje || payload?.message || 'No se pudo completar la solicitud';
+    const fallbackBody = rawBody.trim();
+    const detail = payload?.mensaje || payload?.message || fallbackBody;
+    const message = detail
+      ? `Error ${response.status} en ${path}: ${detail}`
+      : `Error ${response.status} en ${path}: No se pudo completar la solicitud`;
     throw new Error(message);
   }
 
