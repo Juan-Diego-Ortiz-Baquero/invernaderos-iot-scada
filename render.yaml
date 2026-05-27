@@ -31,7 +31,7 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false
+        value: https://invernaderos-api.onrender.com
       - key: VITE_DEFAULT_GREENHOUSE_ID
         value: "1"
       - key: VITE_POLLING_INTERVAL_MS
