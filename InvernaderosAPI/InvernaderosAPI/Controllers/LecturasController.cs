@@ -255,6 +255,8 @@ namespace InvernaderosAPI.Controllers
             int idInvernadero,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
+            [FromQuery] int? idSensor,
+            [FromQuery] bool? soloAlertas,
             [FromQuery] string resolucion = "hora")
         {
             if (!ResolucionesPermitidas.Contains(resolucion))
@@ -282,6 +284,12 @@ namespace InvernaderosAPI.Controllers
                 .Where(l => l.IdInvernadero == idInvernadero
                          && l.FechaHora >= fechaInicio
                          && l.FechaHora <= fechaFin);
+
+            if (idSensor.HasValue)
+                consulta = consulta.Where(l => l.IdSensor == idSensor.Value);
+
+            if (soloAlertas.HasValue)
+                consulta = consulta.Where(l => l.EsAlerta == soloAlertas.Value);
 
             var gruposQuery = resolucion.ToLowerInvariant() switch
             {

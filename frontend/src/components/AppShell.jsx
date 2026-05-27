@@ -1,7 +1,33 @@
 import { formatTime } from '../utils/formatters.js';
 import { StatusPill } from './StatusPill.jsx';
 
-export function AppShell({ children, greenhouseName, lastUpdated, onLogout, systemActive, user }) {
+const navItems = [
+  { key: 'monitoring', label: 'Monitoreo' },
+  { key: 'analytics', label: 'Analitica' },
+  { key: 'alerts', label: 'Alertas', targetId: 'alertas' },
+  { key: 'readings', label: 'Lecturas', targetId: 'lecturas' },
+];
+
+export function AppShell({
+  activeSection,
+  children,
+  greenhouseName,
+  lastUpdated,
+  onLogout,
+  onSectionChange,
+  systemActive,
+  user,
+}) {
+  function handleNavigation(item) {
+    onSectionChange(item.key);
+
+    if (item.targetId) {
+      window.setTimeout(() => {
+        document.getElementById(item.targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Navegación principal">
@@ -14,15 +40,16 @@ export function AppShell({ children, greenhouseName, lastUpdated, onLogout, syst
         </div>
 
         <nav className="nav-list" aria-label="Secciones del panel">
-          <a className="nav-link nav-link--active" href="#dashboard">
-            Monitoreo
-          </a>
-          <a className="nav-link" href="#alertas">
-            Alertas
-          </a>
-          <a className="nav-link" href="#lecturas">
-            Lecturas
-          </a>
+          {navItems.map((item) => (
+            <button
+              className={`nav-link ${activeSection === item.key ? 'nav-link--active' : ''}`}
+              key={item.key}
+              onClick={() => handleNavigation(item)}
+              type="button"
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
 
         <div className="operator-card">

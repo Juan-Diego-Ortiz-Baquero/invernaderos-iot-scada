@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AppShell } from './components/AppShell.jsx';
+import { AnalyticsView } from './components/AnalyticsView.jsx';
 import { Dashboard } from './components/Dashboard.jsx';
 import { LoginPanel } from './components/LoginPanel.jsx';
 import { DEFAULT_GREENHOUSE_ID, DEVICE_STALE_AFTER_MS } from './config.js';
@@ -10,6 +11,7 @@ import { parseApiDate } from './utils/formatters.js';
 
 function DashboardScreen({ session, onLogout }) {
   const idInvernadero = session.idInvernadero || DEFAULT_GREENHOUSE_ID;
+  const [activeSection, setActiveSection] = useState('monitoring');
   const dashboardData = useDashboardData(idInvernadero);
 
   const greenhouseName = useMemo(() => {
@@ -35,9 +37,11 @@ function DashboardScreen({ session, onLogout }) {
 
   return (
     <AppShell
+      activeSection={activeSection}
       greenhouseName={greenhouseName}
       lastUpdated={dashboardData.lastUpdated}
       onLogout={onLogout}
+      onSectionChange={setActiveSection}
       systemActive={systemActive}
       user={session}
     >
@@ -51,20 +55,24 @@ function DashboardScreen({ session, onLogout }) {
         </section>
       ) : null}
 
-      <Dashboard
-        alerts={dashboardData.alerts}
-        dashboard={dashboardData.dashboard}
-        idInvernadero={idInvernadero}
-        latestReading={dashboardData.latestReading}
-        onRefresh={dashboardData.refresh}
-        onResolveAlert={dashboardData.resolveAlert}
-        onResolvePendingAlerts={dashboardData.resolvePendingAlerts}
-        readings={dashboardData.readings}
-        statistics={dashboardData.statistics}
-        status={dashboardData.status}
-        systemActive={systemActive}
-        unresolvedAlerts={dashboardData.unresolvedAlerts}
-      />
+      {activeSection === 'analytics' ? (
+        <AnalyticsView greenhouseName={greenhouseName} idInvernadero={idInvernadero} />
+      ) : (
+        <Dashboard
+          alerts={dashboardData.alerts}
+          dashboard={dashboardData.dashboard}
+          idInvernadero={idInvernadero}
+          latestReading={dashboardData.latestReading}
+          onRefresh={dashboardData.refresh}
+          onResolveAlert={dashboardData.resolveAlert}
+          onResolvePendingAlerts={dashboardData.resolvePendingAlerts}
+          readings={dashboardData.readings}
+          statistics={dashboardData.statistics}
+          status={dashboardData.status}
+          systemActive={systemActive}
+          unresolvedAlerts={dashboardData.unresolvedAlerts}
+        />
+      )}
     </AppShell>
   );
 }
