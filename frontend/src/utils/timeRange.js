@@ -32,7 +32,7 @@ export function toTimeInputValue(date) {
 }
 
 export function toApiDateTime(date) {
-  return `${toDateInputValue(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return date.toISOString();
 }
 
 export function buildLocalDateTime(dateText, timeText) {
