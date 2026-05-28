@@ -97,4 +97,23 @@
         public decimal ValorMinimo { get; set; }
         public decimal ValorMaximo { get; set; }
     }
+
+    // ── ASISTENTE IA ──────────────────────────────────────────
+    public class AsistenteConsultaDto
+    {
+        public string Pregunta { get; set; } = string.Empty;
+        public DateTime? Desde { get; set; }
+        public DateTime? Hasta { get; set; }
+        public string? Variable { get; set; }
+    }
+
+    public class AsistenteRespuestaDto
+    {
+        public string Resumen { get; set; } = string.Empty;
+        public string Prioridad { get; set; } = "normal";
+        public List<string> Hallazgos { get; set; } = new();
+        public List<string> Acciones { get; set; } = new();
+        public List<string> Limitaciones { get; set; } = new();
+        public object? Contexto { get; set; }
+    }
 }

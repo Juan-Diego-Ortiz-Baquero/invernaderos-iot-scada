@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AppShell } from './components/layout/AppShell.jsx';
 import { LoginPanel } from './components/LoginPanel.jsx';
+import { AssistantPanel } from './components/assistant/AssistantPanel.jsx';
 import { DEFAULT_GREENHOUSE_ID, DEVICE_STALE_AFTER_MS } from './config.js';
 import { useDashboardData } from './hooks/useDashboardData.js';
 import { login } from './services/invernaderosApi.js';
@@ -54,6 +55,8 @@ function DashboardScreen({ session, onLogout }) {
           systemActive={systemActive}
         />
       )}
+
+      <AssistantPanel idInvernadero={idInvernadero} />
     </AppShell>
   );
 }

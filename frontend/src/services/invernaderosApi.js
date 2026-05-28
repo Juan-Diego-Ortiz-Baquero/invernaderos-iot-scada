@@ -47,3 +47,7 @@ export function resolveAlert(idAlerta) {
 export function resolvePendingAlerts(idInvernadero) {
   return apiClient.put(`/api/dashboard/${idInvernadero}/alertas/resolver-pendientes`);
 }
+
+export function askAssistant(idInvernadero, payload) {
+  return apiClient.post(`/api/asistente/${idInvernadero}/consultar`, payload);
+}
