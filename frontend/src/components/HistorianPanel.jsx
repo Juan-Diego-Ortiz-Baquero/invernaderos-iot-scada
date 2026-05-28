@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { TimeRangeFilter } from './TimeRangeFilter.jsx';
+import { TimeRangeFilter } from './filters/TimeRangeFilter.jsx';
 import { getHistory } from '../services/invernaderosApi.js';
 import { formatDateTime, formatLocalDateTime, formatValue } from '../utils/formatters.js';
 import {

@@ -1,12 +1,6 @@
-import { formatTime } from '../utils/formatters.js';
-import { StatusPill } from './StatusPill.jsx';
-
-const navItems = [
-  { key: 'monitoring', label: 'Monitoreo' },
-  { key: 'analytics', label: 'Analitica' },
-  { key: 'alerts', label: 'Alertas', targetId: 'alertas' },
-  { key: 'readings', label: 'Lecturas', targetId: 'lecturas' },
-];
+import { formatTime } from '../../utils/formatters.js';
+import { SidebarNav } from './SidebarNav.jsx';
+import { StatusPill } from '../StatusPill.jsx';
 
 export function AppShell({
   activeSection,
@@ -39,18 +33,7 @@ export function AppShell({
           </div>
         </div>
 
-        <nav className="nav-list" aria-label="Secciones del panel">
-          {navItems.map((item) => (
-            <button
-              className={`nav-link ${activeSection === item.key ? 'nav-link--active' : ''}`}
-              key={item.key}
-              onClick={() => handleNavigation(item)}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
+        <SidebarNav activeSection={activeSection} onNavigate={handleNavigation} />
 
         <div className="operator-card">
           <span>Operador</span>

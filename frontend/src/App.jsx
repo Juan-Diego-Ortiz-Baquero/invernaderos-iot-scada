@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import { AppShell } from './components/AppShell.jsx';
-import { AnalyticsView } from './components/AnalyticsView.jsx';
-import { Dashboard } from './components/Dashboard.jsx';
+import { AppShell } from './components/layout/AppShell.jsx';
 import { LoginPanel } from './components/LoginPanel.jsx';
 import { DEFAULT_GREENHOUSE_ID, DEVICE_STALE_AFTER_MS } from './config.js';
 import { useDashboardData } from './hooks/useDashboardData.js';
 import { login } from './services/invernaderosApi.js';
 import { clearSession, getSession, saveSession } from './services/tokenStorage.js';
 import { parseApiDate } from './utils/formatters.js';
+import { AnalyticsView } from './views/AnalyticsView.jsx';
+import { MonitoringView } from './views/MonitoringView.jsx';
 
 function DashboardScreen({ session, onLogout }) {
   const idInvernadero = session.idInvernadero || DEFAULT_GREENHOUSE_ID;
@@ -45,32 +45,13 @@ function DashboardScreen({ session, onLogout }) {
       systemActive={systemActive}
       user={session}
     >
-      {dashboardData.error ? (
-        <section className="error-banner" role="alert">
-          <strong>No se pudo sincronizar con la API.</strong>
-          <span>{dashboardData.error}</span>
-          <button className="small-button" onClick={dashboardData.refresh} type="button">
-            Reintentar
-          </button>
-        </section>
-      ) : null}
-
       {activeSection === 'analytics' ? (
         <AnalyticsView greenhouseName={greenhouseName} idInvernadero={idInvernadero} />
       ) : (
-        <Dashboard
-          alerts={dashboardData.alerts}
-          dashboard={dashboardData.dashboard}
+        <MonitoringView
+          dashboardData={dashboardData}
           idInvernadero={idInvernadero}
-          latestReading={dashboardData.latestReading}
-          onRefresh={dashboardData.refresh}
-          onResolveAlert={dashboardData.resolveAlert}
-          onResolvePendingAlerts={dashboardData.resolvePendingAlerts}
-          readings={dashboardData.readings}
-          statistics={dashboardData.statistics}
-          status={dashboardData.status}
           systemActive={systemActive}
-          unresolvedAlerts={dashboardData.unresolvedAlerts}
         />
       )}
     </AppShell>

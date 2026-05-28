@@ -1,6 +1,7 @@
 :root {
   color-scheme: dark;
   font-family:
+    "Geist",
     "Segoe UI",
     "Aptos",
     system-ui,
@@ -33,6 +34,7 @@
 html {
   min-width: 320px;
   background: var(--bg);
+  scroll-behavior: smooth;
 }
 
 body {
@@ -281,6 +283,7 @@ select:focus {
 }
 
 .nav-link {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
@@ -291,12 +294,30 @@ select:focus {
   min-height: 44px;
   padding: 12px;
   text-align: left;
+  transition:
+    transform 140ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out);
+}
+
+.nav-link::before {
+  width: 4px;
+  height: 18px;
+  border-radius: 999px;
+  background: transparent;
+  content: "";
+  margin-right: 4px;
 }
 
 .nav-link--active {
   border-color: rgba(94, 190, 163, 0.28);
   background: rgba(94, 190, 163, 0.1);
   color: var(--text);
+}
+
+.nav-link--active::before {
+  background: var(--accent);
 }
 
 .operator-card {
@@ -374,6 +395,15 @@ select:focus {
   gap: 16px;
   max-width: 1480px;
   margin: 0 auto;
+}
+
+.view-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.view-stack--monitoring {
+  min-width: 0;
 }
 
 .dashboard-command,
@@ -556,6 +586,7 @@ select:focus {
 .panel {
   min-width: 0;
   padding: 18px;
+  scroll-margin-top: 24px;
 }
 
 .panel-heading {
@@ -917,6 +948,7 @@ svg {
   gap: 16px;
   max-width: 1480px;
   margin: 0 auto;
+  animation: view-enter 260ms var(--ease-out);
 }
 
 .analytics-hero,
@@ -945,6 +977,7 @@ svg {
   font-size: clamp(1.6rem, 3vw, 2.6rem);
   letter-spacing: 0;
   line-height: 1.04;
+  text-wrap: balance;
 }
 
 .analytics-hero p:not(.overline) {
@@ -1052,6 +1085,15 @@ svg {
 .analytics-card {
   min-width: 0;
   padding: 16px;
+  transition:
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.analytics-card:hover {
+  border-color: var(--line-strong);
+  background: rgba(31, 40, 43, 0.82);
 }
 
 .analytics-section-heading {
@@ -1179,6 +1221,18 @@ svg {
 
 .analytics-drilldown {
   min-width: 0;
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .panel-actions {

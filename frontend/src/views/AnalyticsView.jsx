@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { TimeRangeFilter } from './TimeRangeFilter.jsx';
-import { AnalyticsBreakdown } from './analytics/AnalyticsBreakdown.jsx';
-import { AnalyticsDrilldownTable } from './analytics/AnalyticsDrilldownTable.jsx';
-import { AnalyticsKpiGrid } from './analytics/AnalyticsKpiGrid.jsx';
-import { AnalyticsRanking } from './analytics/AnalyticsRanking.jsx';
-import { AnalyticsTrendChart } from './analytics/AnalyticsTrendChart.jsx';
+import { TimeRangeFilter } from '../components/filters/TimeRangeFilter.jsx';
+import { AnalyticsBreakdown } from '../components/analytics/AnalyticsBreakdown.jsx';
+import { AnalyticsDrilldownTable } from '../components/analytics/AnalyticsDrilldownTable.jsx';
+import { AnalyticsKpiGrid } from '../components/analytics/AnalyticsKpiGrid.jsx';
+import { AnalyticsRanking } from '../components/analytics/AnalyticsRanking.jsx';
+import { AnalyticsTrendChart } from '../components/analytics/AnalyticsTrendChart.jsx';
 import { getHistory, getReadingsQuery } from '../services/invernaderosApi.js';
 import {
   ANALYTICS_METRICS,
