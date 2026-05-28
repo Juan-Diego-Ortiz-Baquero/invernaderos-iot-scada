@@ -1,22 +1,103 @@
 import { useMemo, useState } from 'react';
 import { askAssistant } from '../../services/invernaderosApi.js';
-import { getDefaultTimeRange, toTimeRangeQuery } from '../../utils/timeRange.js';
+import { getDefaultTimeRange, getQuickTimeRange, toTimeRangeQuery } from '../../utils/timeRange.js';
 
-const suggestions = [
-  'Que paso hoy?',
-  'Que variables estan fuera de rango?',
-  'Que acciones recomiendas?',
-  'Que tendencia tuvo la temperatura?',
+const suggestionSets = [
+  [
+    'Que paso hoy?',
+    'Que variables estan fuera de rango?',
+    'Que acciones recomiendas?',
+    'Que tendencia tuvo la temperatura?',
+  ],
+  [
+    'Cuantas lecturas tuvimos hoy?',
+    'Compara hoy con ayer',
+    'Como va la humedad del suelo?',
+    'Que paso en las ultimas 24 horas?',
+  ],
+  [
+    'Como estuvo la luz esta tarde?',
+    'Que alertas criticas hay?',
+    'Como va la calidad del aire?',
+    'Resumen de esta semana',
+  ],
 ];
 
-function buildPayload(question, range, variable) {
-  const timeQuery = toTimeRangeQuery(range);
+const variableDictionary = [
+  {
+    key: 'temperature',
+    words: ['temperatura', 'temp', 'grados', 'calor', 'frio', 'fria', 'caliente'],
+  },
+  {
+    key: 'humidity',
+    words: ['humedad del aire', 'humedad aire', 'humedad ambiental', 'humedad', 'ambiente'],
+  },
+  {
+    key: 'soil',
+    words: ['humedad del suelo', 'humedad suelo', 'suelo', 'tierra', 'sustrato', 'maceta'],
+  },
+  {
+    key: 'light',
+    words: ['luminosidad', 'luz', 'iluminacion', 'lux', 'lx'],
+  },
+  {
+    key: 'air',
+    words: ['calidad del aire', 'calidad aire', 'aire', 'gas', 'gases', 'ppm', 'humo', 'co2'],
+  },
+];
+
+const pad = (value) => String(value).padStart(2, '0');
+
+function normalizeText(value) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function toAssistantDateTime(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(
+    date.getMinutes(),
+  )}:00`;
+}
+
+function inferQuickRange(question, fallbackRange) {
+  const normalized = normalizeText(question.trim());
+
+  if (normalized.includes('ayer')) return getQuickTimeRange('yesterday');
+  if (normalized.includes('hoy desde 07') || normalized.includes('hoy desde las 07')) return getQuickTimeRange('todayFrom7');
+  if (normalized.includes('hoy completo')) return getQuickTimeRange('today');
+  if (normalized.includes('hoy')) return getQuickTimeRange('today');
+  if (normalized.includes('esta semana') || normalized.includes('semana actual')) return getQuickTimeRange('thisWeek');
+  if (normalized.includes('este mes') || normalized.includes('mes actual')) return getQuickTimeRange('thisMonth');
+  if (normalized.includes('manana')) return getQuickTimeRange('morning');
+  if (normalized.includes('tarde')) return getQuickTimeRange('afternoon');
+  if (normalized.includes('noche')) return getQuickTimeRange('night');
+  if (normalized.includes('ultimas 24 horas') || normalized.includes('ultima 24 horas') || normalized.includes('24 horas')) {
+    return getQuickTimeRange('last24h');
+  }
+  if (normalized.includes('ultimas 4 horas') || normalized.includes('ultima 4 horas') || normalized.includes('4 horas')) {
+    return getQuickTimeRange('last4h');
+  }
+
+  return fallbackRange;
+}
+
+function detectVariableFromQuestion(question) {
+  const normalized = normalizeText(question);
+  return variableDictionary.find((variable) => variable.words.some((word) => normalized.includes(normalizeText(word))))?.key ?? null;
+}
+
+function buildPayload(question, range) {
+  const inferredRange = inferQuickRange(question, range);
+  const timeQuery = toTimeRangeQuery(inferredRange);
+  const inferredVariable = detectVariableFromQuestion(question);
 
   return {
     pregunta: question,
-    desde: timeQuery.valid ? timeQuery.desde : null,
-    hasta: timeQuery.valid ? timeQuery.hasta : null,
-    variable: variable || null,
+    desde: timeQuery.valid ? toAssistantDateTime(timeQuery.start) : null,
+    hasta: timeQuery.valid ? toAssistantDateTime(timeQuery.end) : null,
+    variable: inferredVariable,
   };
 }
 
@@ -71,6 +152,10 @@ export function AssistantPanel({ idInvernadero }) {
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
   const defaultRange = useMemo(() => getDefaultTimeRange(), [isOpen]);
+  const visibleSuggestions = useMemo(() => {
+    const answeredCount = Math.floor(messages.length / 2);
+    return suggestionSets[answeredCount % suggestionSets.length];
+  }, [messages.length]);
 
   async function submitQuestion(nextQuestion = question) {
     const cleanQuestion = nextQuestion.trim();
@@ -114,7 +199,7 @@ export function AssistantPanel({ idInvernadero }) {
           </header>
 
           <div className="assistant-suggestions" aria-label="Preguntas sugeridas">
-            {suggestions.map((item) => (
+            {visibleSuggestions.map((item) => (
               <button key={item} onClick={() => submitQuestion(item)} type="button">
                 {item}
               </button>

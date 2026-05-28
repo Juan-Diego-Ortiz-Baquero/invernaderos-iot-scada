@@ -60,6 +60,42 @@ export function getQuickTimeRange(key, now = new Date()) {
   const end = new Date(now);
   const start = new Date(now);
 
+  if (key === 'last24h') {
+    start.setHours(start.getHours() - 24);
+    return createTimeRangeState(start, end, key);
+  }
+
+  if (key === 'thisWeek') {
+    const mondayOffset = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - mondayOffset);
+    start.setHours(0, 0, 0, 0);
+    return createTimeRangeState(start, end, key);
+  }
+
+  if (key === 'thisMonth') {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    return createTimeRangeState(start, end, key);
+  }
+
+  if (key === 'morning') {
+    start.setHours(6, 0, 0, 0);
+    end.setHours(Math.min(now.getHours(), 12), now.getHours() < 12 ? now.getMinutes() : 0, 0, 0);
+    return createTimeRangeState(start < end ? start : new Date(end.getTime() - 6 * 36e5), end, key);
+  }
+
+  if (key === 'afternoon') {
+    start.setHours(12, 0, 0, 0);
+    end.setHours(Math.min(Math.max(now.getHours(), 12), 18), now.getHours() < 18 ? now.getMinutes() : 0, 0, 0);
+    return createTimeRangeState(start < end ? start : new Date(end.getTime() - 6 * 36e5), end, key);
+  }
+
+  if (key === 'night') {
+    start.setHours(18, 0, 0, 0);
+    end.setHours(now.getHours() >= 18 ? now.getHours() : 23, now.getHours() >= 18 ? now.getMinutes() : 59, 0, 0);
+    return createTimeRangeState(start < end ? start : new Date(end.getTime() - 6 * 36e5), end, key);
+  }
+
   if (key === 'todayFrom7') {
     start.setHours(7, 0, 0, 0);
     return createTimeRangeState(start, end, key);
