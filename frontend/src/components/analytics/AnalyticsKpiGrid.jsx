@@ -12,27 +12,27 @@ export function AnalyticsKpiGrid({ alertCount, comparison, metric, summary }) {
 
   return (
     <section className="analytics-kpis" aria-label="Indicadores principales">
-      <article className="analytics-kpi">
+      <article className="analytics-kpi" data-reveal>
         <span>Promedio</span>
         <strong>{formatValue(summary.average, metric.unit)}</strong>
         <small>{metric.label} en el rango aplicado</small>
       </article>
-      <article className="analytics-kpi">
+      <article className="analytics-kpi" data-reveal>
         <span>Pico maximo</span>
         <strong>{formatValue(summary.max, metric.unit)}</strong>
         <small>Mayor valor agrupado</small>
       </article>
-      <article className="analytics-kpi">
+      <article className="analytics-kpi" data-reveal>
         <span>Pico minimo</span>
         <strong>{formatValue(summary.min, metric.unit)}</strong>
         <small>Menor valor agrupado</small>
       </article>
-      <article className="analytics-kpi analytics-kpi--alert">
+      <article className="analytics-kpi analytics-kpi--alert" data-reveal>
         <span>Alertas</span>
         <strong>{formatValue(alertCount)}</strong>
         <small>Lecturas marcadas como alerta</small>
       </article>
-      <article className="analytics-kpi">
+      <article className="analytics-kpi" data-reveal>
         <span>Variacion</span>
         <strong>{formatValue(comparison.change, metric.unit)}</strong>
         <small>{trendLabel}</small>

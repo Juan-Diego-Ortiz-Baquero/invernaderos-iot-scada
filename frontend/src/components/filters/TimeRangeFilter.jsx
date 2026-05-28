@@ -20,6 +20,13 @@ export function TimeRangeFilter({
 
   return (
     <div className="time-filter" aria-label="Filtro temporal">
+      <div className="time-filter__header">
+        <div>
+          <span>Ventana temporal</span>
+          <strong>Consulta por fecha y hora exacta</strong>
+        </div>
+      </div>
+
       <div className="time-filter__quick" aria-label="Rangos rapidos">
         {QUICK_TIME_RANGES.map((option) => (
           <button

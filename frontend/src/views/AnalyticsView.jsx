@@ -1,139 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
 import { TimeRangeFilter } from '../components/filters/TimeRangeFilter.jsx';
 import { AnalyticsBreakdown } from '../components/analytics/AnalyticsBreakdown.jsx';
 import { AnalyticsDrilldownTable } from '../components/analytics/AnalyticsDrilldownTable.jsx';
 import { AnalyticsKpiGrid } from '../components/analytics/AnalyticsKpiGrid.jsx';
 import { AnalyticsRanking } from '../components/analytics/AnalyticsRanking.jsx';
 import { AnalyticsTrendChart } from '../components/analytics/AnalyticsTrendChart.jsx';
-import { getHistory, getReadingsQuery } from '../services/invernaderosApi.js';
-import {
-  ANALYTICS_METRICS,
-  ANALYTICS_RESOLUTIONS,
-  compareHalves,
-  findPeak,
-  getMetric,
-  summarizeHistory,
-} from '../utils/analytics.js';
-import {
-  chooseHistoryResolution,
-  formatAppliedRange,
-  getDefaultTimeRange,
-  toTimeRangeQuery,
-  validateTimeRange,
-} from '../utils/timeRange.js';
+import { useAnalyticsData } from '../features/analytics/useAnalyticsData.js';
+import { ANALYTICS_METRICS, ANALYTICS_RESOLUTIONS } from '../utils/analytics.js';
+import { formatAppliedRange } from '../utils/timeRange.js';
+import { useGsapReveal } from '../hooks/useGsapReveal.js';
 
 export function AnalyticsView({ greenhouseName, idInvernadero }) {
-  const [timeRange, setTimeRange] = useState(() => getDefaultTimeRange());
-  const [appliedRange, setAppliedRange] = useState(() => getDefaultTimeRange());
-  const [metricKey, setMetricKey] = useState('temperature');
-  const [estado, setEstado] = useState('todos');
-  const [resolution, setResolution] = useState('auto');
-  const [drilldownPage, setDrilldownPage] = useState(1);
-  const [history, setHistory] = useState(null);
-  const [readingsResult, setReadingsResult] = useState(null);
-  const [alertResult, setAlertResult] = useState(null);
-  const [status, setStatus] = useState('idle');
-  const [error, setError] = useState('');
-
-  const metric = getMetric(metricKey);
-  const points = history?.puntos || [];
-  const summary = useMemo(() => summarizeHistory(points, metric), [metric, points]);
-  const comparison = useMemo(() => compareHalves(points, metric), [metric, points]);
-  const highPeak = useMemo(() => findPeak(points, metric, 'max'), [metric, points]);
-  const lowPeak = useMemo(() => findPeak(points, metric, 'min'), [metric, points]);
-  const selectedResolution = history?.resolucion || resolution;
-
-  useEffect(() => {
-    let isMounted = true;
-    const timeQuery = toTimeRangeQuery(appliedRange);
-
-    if (!timeQuery.valid) {
-      setError(timeQuery.error);
-      setStatus('error');
-      return undefined;
-    }
-
-    const resolvedResolution =
-      resolution === 'auto' ? chooseHistoryResolution(timeQuery.start, timeQuery.end) : resolution;
-    const soloAlertas = estado === 'todos' ? '' : estado === 'alertas';
-
-    setStatus((current) => (current === 'idle' ? 'loading' : 'refreshing'));
-    setError('');
-
-    Promise.all([
-      getHistory(idInvernadero, {
-        desde: timeQuery.desde,
-        hasta: timeQuery.hasta,
-        resolucion: resolvedResolution,
-        soloAlertas,
-      }),
-      getReadingsQuery(idInvernadero, {
-        desde: timeQuery.desde,
-        hasta: timeQuery.hasta,
-        soloAlertas,
-        pagina: drilldownPage,
-        tamanoPagina: 25,
-      }),
-      getReadingsQuery(idInvernadero, {
-        desde: timeQuery.desde,
-        hasta: timeQuery.hasta,
-        soloAlertas: true,
-        pagina: 1,
-        tamanoPagina: 10,
-      }),
-    ])
-      .then(([historyResponse, readingsResponse, alertResponse]) => {
-        if (!isMounted) return;
-        setHistory(historyResponse);
-        setReadingsResult(readingsResponse);
-        setAlertResult(alertResponse);
-        setStatus('ready');
-      })
-      .catch((requestError) => {
-        if (!isMounted) return;
-        setError(requestError.message);
-        setStatus('error');
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [appliedRange, drilldownPage, estado, idInvernadero, resolution]);
-
-  function applyTimeRange() {
-    const result = validateTimeRange(timeRange);
-
-    if (!result.valid) {
-      setError(result.error);
-      setStatus('error');
-      return;
-    }
-
-    setDrilldownPage(1);
-    setAppliedRange(timeRange);
-  }
-
-  function clearTimeRange() {
-    const nextRange = getDefaultTimeRange();
-    setTimeRange(nextRange);
-    setAppliedRange(nextRange);
-    setDrilldownPage(1);
-    setError('');
-  }
-
-  function handleEstadoChange(nextEstado) {
-    setDrilldownPage(1);
-    setEstado(nextEstado);
-  }
-
-  function handleResolutionChange(nextResolution) {
-    setDrilldownPage(1);
-    setResolution(nextResolution);
-  }
+  const analytics = useAnalyticsData(idInvernadero);
+  const revealRef = useGsapReveal([
+    analytics.appliedRange,
+    analytics.estado,
+    analytics.metricKey,
+    analytics.resolution,
+  ]);
 
   return (
-    <main className="analytics-page" id="analitica">
-      <section className="analytics-hero">
+    <main className="analytics-page" id="analitica" ref={revealRef}>
+      <section className="analytics-hero" data-reveal>
         <div>
           <p className="overline">Analitica</p>
           <h2>Centro historico y comparativo</h2>
@@ -143,27 +30,27 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
         </div>
         <div className="analytics-range-card">
           <span>Rango activo</span>
-          <strong>{formatAppliedRange(appliedRange)}</strong>
+          <strong>{formatAppliedRange(analytics.appliedRange)}</strong>
           <small>{greenhouseName}</small>
         </div>
       </section>
 
-      <section className="analytics-filter-panel" aria-label="Filtros globales de analitica">
+      <section className="analytics-filter-panel" data-reveal aria-label="Filtros globales de analitica">
         <TimeRangeFilter
-          appliedRange={appliedRange}
-          busy={status === 'loading' || status === 'refreshing'}
-          error={error && status === 'error' ? error : ''}
+          appliedRange={analytics.appliedRange}
+          busy={analytics.status === 'loading' || analytics.status === 'refreshing'}
+          error={analytics.error && analytics.status === 'error' ? analytics.error : ''}
           idPrefix="analytics"
-          onApply={applyTimeRange}
-          onChange={setTimeRange}
-          onClear={clearTimeRange}
-          range={timeRange}
+          onApply={analytics.applyTimeRange}
+          onChange={analytics.setTimeRange}
+          onClear={analytics.clearTimeRange}
+          range={analytics.timeRange}
         />
 
         <div className="analytics-global-filters">
           <label>
             Variable
-            <select value={metricKey} onChange={(event) => setMetricKey(event.target.value)}>
+            <select value={analytics.metricKey} onChange={(event) => analytics.setMetricKey(event.target.value)}>
               {ANALYTICS_METRICS.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label}
@@ -173,7 +60,7 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
           </label>
           <label>
             Estado
-            <select value={estado} onChange={(event) => handleEstadoChange(event.target.value)}>
+            <select value={analytics.estado} onChange={(event) => analytics.updateEstado(event.target.value)}>
               <option value="todos">Todos</option>
               <option value="normal">Normal</option>
               <option value="alertas">Alertas</option>
@@ -181,7 +68,7 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
           </label>
           <label>
             Resolucion
-            <select value={resolution} onChange={(event) => handleResolutionChange(event.target.value)}>
+            <select value={analytics.resolution} onChange={(event) => analytics.updateResolution(event.target.value)}>
               {ANALYTICS_RESOLUTIONS.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label}
@@ -198,47 +85,47 @@ export function AnalyticsView({ greenhouseName, idInvernadero }) {
         </div>
       </section>
 
-      {error && status !== 'error' ? <p className="empty-state">{error}</p> : null}
+      {analytics.error && analytics.status !== 'error' ? <p className="empty-state">{analytics.error}</p> : null}
 
       <AnalyticsKpiGrid
-        alertCount={alertResult?.totalRegistros || 0}
-        comparison={comparison}
-        metric={metric}
-        summary={summary}
+        alertCount={analytics.alertResult?.totalRegistros || 0}
+        comparison={analytics.comparison}
+        metric={analytics.metric}
+        summary={analytics.summary}
       />
 
-      <section className="analytics-layout">
-        <AnalyticsTrendChart metric={metric} points={points} resolution={selectedResolution} />
+      <section className="analytics-layout" data-reveal>
+        <AnalyticsTrendChart metric={analytics.metric} points={analytics.points} resolution={analytics.selectedResolution} />
         <AnalyticsBreakdown
-          alertCount={alertResult?.totalRegistros || 0}
-          comparison={comparison}
+          alertCount={analytics.alertResult?.totalRegistros || 0}
+          comparison={analytics.comparison}
           greenhouseName={greenhouseName}
-          highPeak={highPeak}
-          lowPeak={lowPeak}
-          metric={metric}
-          summary={summary}
+          highPeak={analytics.highPeak}
+          lowPeak={analytics.lowPeak}
+          metric={analytics.metric}
+          summary={analytics.summary}
         />
       </section>
 
-      <section className="analytics-lower-grid">
+      <section className="analytics-lower-grid" data-reveal>
         <AnalyticsRanking
-          alertCount={alertResult?.totalRegistros || 0}
+          alertCount={analytics.alertResult?.totalRegistros || 0}
           greenhouseName={greenhouseName}
-          totalReadings={readingsResult?.totalRegistros || 0}
+          totalReadings={analytics.readingsResult?.totalRegistros || 0}
         />
         <AnalyticsDrilldownTable
-          metric={metric}
-          currentPage={readingsResult?.pagina || drilldownPage}
-          onPageChange={setDrilldownPage}
+          metric={analytics.metric}
+          currentPage={analytics.readingsResult?.pagina || analytics.drilldownPage}
+          onPageChange={analytics.setDrilldownPage}
           pageSize={25}
-          readings={readingsResult?.lecturas || []}
-          total={readingsResult?.totalRegistros || 0}
-          totalPages={readingsResult?.totalPaginas || 1}
+          readings={analytics.readingsResult?.lecturas || []}
+          total={analytics.readingsResult?.totalRegistros || 0}
+          totalPages={analytics.readingsResult?.totalPaginas || 1}
         />
       </section>
 
-      {status === 'loading' ? <p className="empty-state">Cargando analitica historica desde la API.</p> : null}
-      {status === 'error' ? <p className="empty-state">{error}</p> : null}
+      {analytics.status === 'loading' ? <p className="empty-state">Cargando analitica historica desde la API.</p> : null}
+      {analytics.status === 'error' ? <p className="empty-state">{analytics.error}</p> : null}
     </main>
   );
 }

@@ -1,20 +1,26 @@
 import { Dashboard } from '../components/Dashboard.jsx';
+import { useGsapReveal } from '../hooks/useGsapReveal.js';
+import { ErrorBanner } from '../shared/ui/ErrorBanner.jsx';
 
 export function MonitoringView({
   dashboardData,
   idInvernadero,
   systemActive,
 }) {
+  const revealRef = useGsapReveal([dashboardData.status, systemActive]);
+
   return (
-    <main className="view-stack view-stack--monitoring">
+    <main className="view-stack view-stack--monitoring" ref={revealRef}>
       {dashboardData.error ? (
-        <section className="error-banner" role="alert">
-          <strong>No se pudo sincronizar con la API.</strong>
-          <span>{dashboardData.error}</span>
-          <button className="small-button" onClick={dashboardData.refresh} type="button">
-            Reintentar
-          </button>
-        </section>
+        <ErrorBanner
+          action={
+            <button className="small-button" onClick={dashboardData.refresh} type="button">
+              Reintentar
+            </button>
+          }
+          message={dashboardData.error}
+          title="No se pudo sincronizar con la API."
+        />
       ) : null}
 
       <Dashboard

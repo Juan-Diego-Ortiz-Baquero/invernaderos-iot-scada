@@ -1,27 +1,9 @@
+import { PaginationChips } from '../../shared/ui/PaginationChips.jsx';
+import { EmptyState } from '../../shared/ui/EmptyState.jsx';
 import { formatDateTime, formatValue } from '../../utils/formatters.js';
-
-function buildPageWindow(currentPage, totalPages) {
-  const windowSize = totalPages <= 7 ? totalPages : 5;
-  const halfWindow = Math.floor(windowSize / 2);
-  let start = Math.max(1, currentPage - halfWindow);
-  let end = Math.min(totalPages, start + windowSize - 1);
-
-  start = Math.max(1, end - windowSize + 1);
-
-  const pages = [];
-
-  for (let page = start; page <= end; page += 1) {
-    pages.push(page);
-  }
-
-  return pages;
-}
 
 export function AnalyticsDrilldownTable({ currentPage, metric, onPageChange, pageSize, readings, total, totalPages }) {
   const safeTotalPages = Math.max(1, totalPages || 1);
-  const visiblePages = buildPageWindow(currentPage, safeTotalPages);
-  const hasPrevious = currentPage > 1;
-  const hasNext = currentPage < safeTotalPages;
 
   return (
     <section className="analytics-card analytics-drilldown" aria-labelledby="analytics-detail-title">
@@ -35,45 +17,7 @@ export function AnalyticsDrilldownTable({ currentPage, metric, onPageChange, pag
 
       {readings.length ? (
         <>
-          <div className="analytics-pagination" aria-label="Paginacion del drill-down">
-            <button className="small-button" disabled={!hasPrevious} onClick={() => onPageChange(currentPage - 1)} type="button">
-              Anterior
-            </button>
-
-            {visiblePages[0] > 1 ? (
-              <>
-                <button className="page-chip" onClick={() => onPageChange(1)} type="button">
-                  1
-                </button>
-                {visiblePages[0] > 2 ? <span className="page-ellipsis">...</span> : null}
-              </>
-            ) : null}
-
-            {visiblePages.map((page) => (
-              <button
-                aria-current={page === currentPage ? 'page' : undefined}
-                className={page === currentPage ? 'page-chip page-chip--active' : 'page-chip'}
-                key={page}
-                onClick={() => onPageChange(page)}
-                type="button"
-              >
-                {page}
-              </button>
-            ))}
-
-            {visiblePages[visiblePages.length - 1] < safeTotalPages ? (
-              <>
-                {visiblePages[visiblePages.length - 1] < safeTotalPages - 1 ? <span className="page-ellipsis">...</span> : null}
-                <button className="page-chip" onClick={() => onPageChange(safeTotalPages)} type="button">
-                  {safeTotalPages}
-                </button>
-              </>
-            ) : null}
-
-            <button className="small-button" disabled={!hasNext} onClick={() => onPageChange(currentPage + 1)} type="button">
-              Siguiente
-            </button>
-          </div>
+          <PaginationChips currentPage={currentPage} onPageChange={onPageChange} totalPages={safeTotalPages} />
 
           <div className="table-wrap">
             <table>
@@ -111,7 +55,7 @@ export function AnalyticsDrilldownTable({ currentPage, metric, onPageChange, pag
           </div>
         </>
       ) : (
-        <p className="empty-state">No hay lecturas para el filtro aplicado.</p>
+        <EmptyState title="Sin lecturas en el drill-down">Prueba con otro rango, estado o variable.</EmptyState>
       )}
     </section>
   );

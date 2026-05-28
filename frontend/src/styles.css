@@ -425,6 +425,19 @@ select:focus {
   line-height: 1.2;
 }
 
+.command-panel {
+  background:
+    linear-gradient(135deg, rgba(94, 190, 163, 0.12), transparent 36%),
+    rgba(25, 32, 35, 0.78);
+}
+
+.command-panel span {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 .critical-ribbon {
   justify-content: flex-start;
   border-color: rgba(222, 110, 86, 0.42);
@@ -502,6 +515,10 @@ select:focus {
   min-height: 158px;
   overflow: hidden;
   padding: 18px;
+  transition:
+    transform 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out);
 }
 
 .metric-card::before {
@@ -569,6 +586,12 @@ select:focus {
   background: currentColor;
   color: var(--accent);
   transition: width 420ms var(--ease-out);
+}
+
+.metric-card:hover {
+  border-color: var(--line-strong);
+  background: rgba(31, 40, 43, 0.86);
+  transform: translateY(-2px);
 }
 
 .metric-card--warning .metric-card__rail span {
@@ -735,8 +758,13 @@ select:focus {
 }
 
 .chart-wrap {
+  position: relative;
   width: 100%;
   overflow: hidden;
+}
+
+.chart-wrap--interactive {
+  overflow: visible;
 }
 
 svg {
@@ -837,6 +865,10 @@ svg {
   stroke-width: 4;
 }
 
+.chart-point-hit {
+  cursor: crosshair;
+}
+
 .chart-cursor line {
   stroke: currentColor;
   stroke-dasharray: 4 6;
@@ -856,6 +888,37 @@ svg {
   stroke: rgba(16, 20, 22, 0.9);
   stroke-width: 5;
   stroke-linejoin: round;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 3;
+  left: var(--tooltip-x);
+  top: var(--tooltip-y);
+  display: grid;
+  gap: 4px;
+  min-width: 176px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(12, 17, 18, 0.96);
+  box-shadow: 0 18px 46px rgba(3, 8, 9, 0.38);
+  color: var(--text);
+  padding: 10px 12px;
+  pointer-events: none;
+  transform: translate(14px, -100%);
+  animation: tooltip-in 150ms var(--ease-out);
+}
+
+.chart-tooltip span,
+.chart-tooltip small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.chart-tooltip strong {
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 1rem;
+  letter-spacing: 0;
 }
 
 .chart-footer {
@@ -878,6 +941,18 @@ svg {
 @keyframes chart-fade {
   to {
     opacity: 1;
+  }
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(14px, calc(-100% + 6px)) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(14px, -100%) scale(1);
   }
 }
 
@@ -1259,6 +1334,30 @@ svg {
   padding: 12px;
 }
 
+.time-filter__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.time-filter__header div {
+  display: grid;
+  gap: 4px;
+}
+
+.time-filter__header span {
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.time-filter__header strong {
+  font-size: 0.95rem;
+}
+
 .time-filter__quick {
   display: flex;
   flex-wrap: wrap;
@@ -1562,6 +1661,32 @@ td {
   color: var(--text-muted);
   padding: 22px;
   text-align: center;
+}
+
+.empty-state--composed {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.empty-state--composed strong {
+  color: var(--text);
+}
+
+.empty-state--composed p {
+  margin: 0;
+  max-width: 44ch;
+}
+
+.empty-state__mark {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(122, 215, 187, 0.42);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, transparent 46%, rgba(122, 215, 187, 0.64) 46% 54%, transparent 54%),
+    linear-gradient(180deg, transparent 46%, rgba(122, 215, 187, 0.64) 46% 54%, transparent 54%),
+    rgba(94, 190, 163, 0.08);
 }
 
 .skeleton-panel,
