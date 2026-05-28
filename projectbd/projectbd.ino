@@ -11,11 +11,18 @@
 
 // ── WiFi ──────────────────────────────────────────────────────
 // ── WiFi ──────────────────────────────────────────────────────
-//const char* WIFI_SSID     = "Redmi Note 13 5G";
-//const char* WIFI_PASSWORD = "123456789*";
+const char* WIFI_SSID     = "Redmi Note 13 5G";
+const char* WIFI_PASSWORD = "123456789*";
 
-const char* WIFI_SSID     = "COMUNICACIONES CHIA";
-const char* WIFI_PASSWORD = "Adoracion";
+//const char* WIFI_SSID     = "COMUNICACIONES CHIA";
+//const char* WIFI_PASSWORD = "Adoracion";
+
+//const char* WIFI_SSID     = "GalaxyS24DeMiguel";
+//const char* WIFI_PASSWORD = "miguel12";
+
+//const char* WIFI_SSID     = "TCL 40 NXTPAPER";
+//const char* WIFI_PASSWORD = "sant1630";
+
 // ── API ───────────────────────────────────────────────────────
 const char* API_URL = "https://api-invernaderos-inicial.onrender.com/api/Lecturas";
 
